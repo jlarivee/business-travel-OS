@@ -20,12 +20,13 @@ The main product is the watch loop: active routes are checked every four hours, 
 
 ## Replit setup
 
-Add these in Replit Secrets:
+Add only these required Replit Secrets for v1:
 
 - `DATABASE_URL`
 - `ANTHROPIC_API_KEY`
 - `TAVILY_API_KEY`
-- Optional: `FIRECRAWL_API_KEY`, `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `NOTIFY_EMAIL_TO`, `NOTIFY_SMS_TO`
+
+You do not need these for v1: `FIRECRAWL_API_KEY`, `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `NOTIFY_EMAIL_TO`, `NOTIFY_SMS_TO`. They are optional hooks for fallback scraping and real email/SMS delivery later. If they are missing, the app still runs and logs notification stubs.
 
 Then run:
 
