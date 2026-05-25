@@ -1,6 +1,7 @@
 async function request(path, options = {}) {
   const res = await fetch(path, {
     ...options,
+    credentials: 'include',
     headers: {
       ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers || {}),
@@ -9,13 +10,18 @@ async function request(path, options = {}) {
   });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || 'Request failed');
+    const err = new Error(error.error || 'Request failed');
+    err.status = res.status;
+    throw err;
   }
   return res.json();
 }
 
 export const api = {
   health: () => request('/api/health'),
+  authStatus: () => request('/api/auth/status'),
+  login: (username, password) => request('/api/auth/login', { method: 'POST', body: { username, password } }),
+  logout: () => request('/api/auth/logout', { method: 'POST' }),
   getProfile: () => request('/api/profile'),
   updateProfile: (data) => request('/api/profile', { method: 'PUT', body: data }),
   searchFlights: (data) => request('/api/search/flights', { method: 'POST', body: data }),

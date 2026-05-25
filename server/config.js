@@ -23,8 +23,29 @@ export function getAllowedOrigins() {
   return new Set([
     'http://localhost:5173',
     'http://localhost:3000',
+    'https://business-travel-os.replit.app',
     ...(process.env.ALLOWED_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean),
   ]);
+}
+
+export function isProductionRuntime() {
+  return process.env.NODE_ENV === 'production' || Boolean(process.env.REPL_ID);
+}
+
+export function getAuthConfig() {
+  const password = process.env.APP_PASSWORD || process.env.ADMIN_PASSWORD || '';
+  const localFallback = isProductionRuntime() ? '' : 'local-dev-only';
+  const effectivePassword = password || localFallback;
+  const providedSecret = process.env.JWT_SECRET || process.env.APP_SESSION_SECRET || '';
+  return {
+    username: process.env.APP_USERNAME || process.env.ADMIN_USERNAME || 'josh',
+    password: effectivePassword,
+    configured: Boolean((password && providedSecret) || !isProductionRuntime()),
+    localFallback: !password && !isProductionRuntime(),
+    cookieName: 'bto_session',
+    sessionTtlMs: 12 * 60 * 60 * 1000,
+    secret: providedSecret || localFallback,
+  };
 }
 
 export function getAnthropicModel() {

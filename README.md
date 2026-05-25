@@ -23,6 +23,9 @@ The main product is the watch loop: active routes are checked every four hours, 
 Add only these required Replit Secrets for v1:
 
 - `DATABASE_URL`
+- `APP_USERNAME`
+- `APP_PASSWORD`
+- `JWT_SECRET`
 - `ANTHROPIC_API_KEY`
 - `TAVILY_API_KEY`
 
@@ -46,6 +49,8 @@ npm run install:all
 npm run db:push
 npm run start
 ```
+
+`APP_USERNAME` and `APP_PASSWORD` protect the deployed app with a single-user login. `JWT_SECRET` signs the private browser session cookie. If `APP_PASSWORD` is missing in production, all private APIs stay locked.
 
 For local development:
 

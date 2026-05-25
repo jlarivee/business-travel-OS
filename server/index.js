@@ -4,6 +4,7 @@ import cors from 'cors';
 import express from 'express';
 import { z } from 'zod';
 import { APP_NAME, envFlag, getAllowedOrigins, redact, USER_ID } from './config.js';
+import { authStatus, login, logout, requireAuth } from './auth.js';
 import {
   createItineraryItem,
   createMembership,
@@ -39,6 +40,10 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'same-origin');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
   next();
 });
 app.use(cors({
@@ -98,9 +103,23 @@ app.get('/api/health', asyncHandler(async (req, res) => {
       slack: redact(process.env.SLACK_WEBHOOK_URL),
     },
     cron: cronStatus(),
+    auth: authStatus(req),
     checkedAt: new Date().toISOString(),
   });
 }));
+
+app.get('/api/auth/status', asyncHandler(async (req, res) => {
+  res.json(authStatus(req));
+}));
+
+app.post('/api/auth/login', login);
+app.post('/api/auth/logout', logout);
+
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+app.use('/api', requireAuth);
 
 app.get('/api/profile', asyncHandler(async (req, res) => {
   const [profile, memberships, watches, hits, searches, dailyReviews, itinerary] = await Promise.all([

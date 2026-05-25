@@ -10,7 +10,9 @@ import {
   Clock3,
   Gauge,
   Home,
+  LockKeyhole,
   Loader2,
+  LogOut,
   MessageCircle,
   Pause,
   Plane,
@@ -123,6 +125,62 @@ function Select(props) {
       {...props}
       className={cn('w-full rounded-md border border-line bg-bg/80 px-3 py-2.5 text-sm text-text focus:border-sky', props.className)}
     />
+  );
+}
+
+function LoginScreen({ health, onLogin }) {
+  const [username, setUsername] = useState('josh');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const configured = health?.auth?.configured !== false;
+
+  async function submit(event) {
+    event.preventDefault();
+    setError('');
+    setBusy(true);
+    try {
+      await onLogin(username, password);
+    } catch (loginError) {
+      setError(loginError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md rounded-lg border border-line bg-surface/95 p-5 shadow-soft">
+        <div className="mb-5 flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber text-bg">
+            <LockKeyhole className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber">Private app</p>
+            <h1 className="text-xl font-semibold text-text">Business Travel OS</h1>
+          </div>
+        </div>
+        {!configured ? (
+          <div className="rounded-md border border-red/35 bg-red/10 p-3 text-sm text-muted">
+            Security is not configured. Add `APP_USERNAME`, `APP_PASSWORD`, and `JWT_SECRET` in Replit Secrets, then redeploy.
+          </div>
+        ) : (
+          <form className="space-y-3" onSubmit={submit}>
+            <Field label="Username">
+              <Input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" />
+            </Field>
+            <Field label="Password">
+              <Input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" autoFocus />
+            </Field>
+            {error && <p className="rounded-md border border-red/35 bg-red/10 p-3 text-sm text-red">{error}</p>}
+            <Button className="w-full" icon={LockKeyhole} loading={busy}>Unlock travel OS</Button>
+          </form>
+        )}
+        {health?.auth?.localFallback && (
+          <p className="mt-3 text-xs text-quiet">Local development fallback password is active. Production requires Replit Secrets.</p>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -660,7 +718,7 @@ function ChatPage() {
   );
 }
 
-function AppShell({ page, setPage, children, bundle, health }) {
+function AppShell({ page, setPage, children, bundle, health, onLogout }) {
   const nav = [
     { id: 'command', label: 'Command', icon: Home },
     { id: 'watches', label: 'Watches', icon: Bell },
@@ -689,7 +747,15 @@ function AppShell({ page, setPage, children, bundle, health }) {
               <Clock3 className="h-4 w-4 text-sky" />
               4-hour watch loop
             </span>
+            <Button tone="ghost" icon={LogOut} onClick={onLogout}>Logout</Button>
           </div>
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded-md border border-line bg-panel text-muted md:hidden"
+            onClick={onLogout}
+            aria-label="Logout"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </header>
 
@@ -745,16 +811,23 @@ export default function App() {
   const [page, setPage] = useState('command');
   const [bundle, setBundle] = useState(null);
   const [health, setHealth] = useState(null);
+  const [auth, setAuth] = useState(null);
   const [error, setError] = useState('');
 
   async function load() {
     setError('');
     try {
-      const [healthResult, profileResult] = await Promise.all([
+      const [healthResult, authResult] = await Promise.all([
         api.health(),
-        api.getProfile(),
+        api.authStatus(),
       ]);
       setHealth(healthResult);
+      setAuth(authResult);
+      if (!authResult.authenticated) {
+        setBundle(null);
+        return;
+      }
+      const profileResult = await api.getProfile();
       setBundle(profileResult);
     } catch (loadError) {
       setError(loadError.message);
@@ -777,6 +850,22 @@ export default function App() {
     );
   }
 
+  async function handleLogin(username, password) {
+    await api.login(username, password);
+    await load();
+  }
+
+  async function handleLogout() {
+    await api.logout().catch(() => {});
+    setPage('command');
+    setBundle(null);
+    await load();
+  }
+
+  if (auth && !auth.authenticated) {
+    return <LoginScreen health={health} onLogin={handleLogin} />;
+  }
+
   if (!bundle) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -793,7 +882,7 @@ export default function App() {
   };
 
   return (
-    <AppShell page={page} setPage={setPage} bundle={bundle} health={health}>
+    <AppShell page={page} setPage={setPage} bundle={bundle} health={health} onLogout={handleLogout}>
       <div className="mb-4 grid gap-3 lg:grid-cols-[1.4fr_0.6fr]">
         <div className="rounded-lg border border-line bg-surface/92 p-4">
           <div className="flex items-start gap-3">

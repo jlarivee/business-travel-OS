@@ -3,6 +3,9 @@
 ## Backend
 
 - `GET /api/health` returns configured service flags and cron state.
+- Private APIs return `401` before login.
+- `POST /api/auth/login` accepts the configured single-user `APP_USERNAME` and `APP_PASSWORD`, sets an HTTP-only cookie, and unlocks private APIs.
+- `POST /api/auth/logout` clears the cookie and private APIs return `401` again.
 - First boot creates user profile for user 1 with home airports BDL, PVD, HVN, JFK, LGA, EWR, BOS and default cabin business.
 - `GET /api/profile` returns profile, memberships, recent searches, watches, and daily reviews.
 - Profile update persists home airports, default cabin, notify channels, and reimbursement notes.
