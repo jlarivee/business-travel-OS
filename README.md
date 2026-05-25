@@ -26,7 +26,18 @@ Add only these required Replit Secrets for v1:
 - `ANTHROPIC_API_KEY`
 - `TAVILY_API_KEY`
 
-You do not need these for v1: `FIRECRAWL_API_KEY`, `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `NOTIFY_EMAIL_TO`, `NOTIFY_SMS_TO`. They are optional hooks for fallback scraping and real email/SMS delivery later. If they are missing, the app still runs and logs notification stubs.
+You do not need these for v1: `FIRECRAWL_API_KEY`, `RESEND_API_KEY`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `NOTIFY_EMAIL_TO`, `NOTIFY_SMS_TO`, `SLACK_WEBHOOK_URL`. They are optional hooks for fallback scraping and real notifications later. If they are missing, the app still runs and logs notification stubs.
+
+### Gmail alerts
+
+To use your Gmail account for fare alerts, add these Replit Secrets:
+
+- `GMAIL_USER`: your full Gmail address
+- `GMAIL_APP_PASSWORD`: a Google app password, not your normal Gmail password
+- `NOTIFY_EMAIL_TO`: where alerts should go; if omitted, the app sends to `GMAIL_USER`
+- `GMAIL_FROM_NAME`: optional sender name, defaults to `Business Travel OS`
+
+Then open the app Profile page and turn on the `email` notification channel. Google requires app passwords for this kind of SMTP sign-in when using a personal Gmail account.
 
 Then run:
 

@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import twilio from 'twilio';
 
 function configured(value) {
@@ -10,14 +11,28 @@ export async function notifyWatchHit({ hit, watch, profile }) {
 
   console.log(`[NOTIFY_STUB] ${message}`);
 
-  if (process.env.ENABLE_REAL_NOTIFICATIONS !== 'true') {
-    return { sent: false, channel: 'console', reason: 'v1 stub' };
-  }
-
   const channels = profile?.notifyChannels || {};
   const sends = [];
+  const usedChannels = ['console'];
 
-  if (channels.email && configured(process.env.RESEND_API_KEY) && configured(process.env.NOTIFY_EMAIL_TO)) {
+  if (channels.email && configured(process.env.GMAIL_USER) && configured(process.env.GMAIL_APP_PASSWORD)) {
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    });
+    sends.push(transporter.sendMail({
+      from: `"${process.env.GMAIL_FROM_NAME || 'Business Travel OS'}" <${process.env.GMAIL_USER}>`,
+      to: process.env.NOTIFY_EMAIL_TO || process.env.GMAIL_USER,
+      subject: `Business Travel OS fare hit: ${watch.name}`,
+      text: message,
+    }));
+    usedChannels.push('gmail');
+  } else if (channels.email && configured(process.env.RESEND_API_KEY) && configured(process.env.NOTIFY_EMAIL_TO)) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     sends.push(resend.emails.send({
       from: process.env.RESEND_FROM || 'Travel Buddy <alerts@example.com>',
@@ -25,6 +40,7 @@ export async function notifyWatchHit({ hit, watch, profile }) {
       subject: `Business Travel OS fare hit: ${watch.name}`,
       text: message,
     }));
+    usedChannels.push('resend');
   }
 
   if (
@@ -40,8 +56,18 @@ export async function notifyWatchHit({ hit, watch, profile }) {
       to: process.env.NOTIFY_SMS_TO,
       body: message,
     }));
+    usedChannels.push('twilio');
+  }
+
+  if (channels.slack && configured(process.env.SLACK_WEBHOOK_URL)) {
+    sends.push(fetch(process.env.SLACK_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: message }),
+    }));
+    usedChannels.push('slack');
   }
 
   await Promise.allSettled(sends);
-  return { sent: sends.length > 0, channel: sends.length ? 'configured' : 'console' };
+  return { sent: sends.length > 0, channels: usedChannels };
 }

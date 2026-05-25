@@ -549,7 +549,7 @@ function ProfilePage({ bundle, onRefresh }) {
           </Field>
           <Field label="Notify channels">
             <div className="flex flex-wrap gap-2 rounded-md border border-line bg-bg/80 p-2.5 text-sm">
-              {['console', 'email', 'sms'].map((channel) => (
+              {['console', 'email', 'sms', 'slack'].map((channel) => (
                 <button
                   key={channel}
                   type="button"

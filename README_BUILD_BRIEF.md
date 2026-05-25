@@ -21,5 +21,5 @@ Build a single-user executive travel app that acts like the business-travel vers
 - Watch check-now works.
 - Cron runs every four hours and records hits below max price.
 - Chat works with `search_flights`, `create_watch`, `get_watched_routes`, `get_memberships`, and `check_watch_now`.
-- Resend and Twilio interfaces exist but only log in v1.
+- Notification interface supports console by default and Gmail SMTP when `GMAIL_USER` plus `GMAIL_APP_PASSWORD` are present and email alerts are enabled in Profile. Resend, Twilio, and Slack remain optional.
 - Build passes.
